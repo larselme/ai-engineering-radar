@@ -110,13 +110,17 @@ def test_mutable_defaults_are_not_shared() -> None:
 
     assert second.top_findings == []
 
-    def test_editor_finding_rejects_confidence_outside_unit_interval() -> None:
-        with pytest.raises(ValidationError):
-            EditorFinding(
-                title="Finding",
-                source_url="https://example.com/finding",
-                what_changed="Something changed",
-                why_it_matters="It affects engineers",
-                confidence=1.1,
-                skeptic_objection="Evidence is preliminary",
-            )
+
+@pytest.mark.parametrize("confidence", [-0.01, 1.01])
+def test_editor_finding_rejects_confidence_outside_unit_interval(
+    confidence: float,
+) -> None:
+    with pytest.raises(ValidationError):
+        EditorFinding(
+            title="Finding",
+            source_url="https://example.com/finding",
+            what_changed="Something changed",
+            why_it_matters="It affects engineers",
+            confidence=confidence,
+            skeptic_objection="Evidence is preliminary",
+        )

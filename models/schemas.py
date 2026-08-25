@@ -103,7 +103,7 @@ class EditorFinding(BaseModel):
     source_url: HttpUrl
     what_changed: str
     why_it_matters: str
-    confidence: float
+    confidence: float = Field(ge=0, le=1)
     skeptic_objection: str
 
 
