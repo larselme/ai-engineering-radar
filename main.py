@@ -104,12 +104,11 @@ def run_radar(settings: Settings, now: datetime | None = None) -> RunRecord:
 
     try:
         previous = store.latest_successful_run()
-        since = (
-            run_time - timedelta(days=7)
-            if previous is None
-            else (previous.ended_at or previous.started_at)
+        since = run_time - timedelta(days=7)
+        run.previous_successful_run = (
+            None if previous is None else (previous.ended_at or previous.started_at)
         )
-        run.previous_successful_run = None if previous is None else since
+        run.metadata["collection_since"] = since.isoformat()
 
         logger.info("collection start")
         sources = _load_sources()
@@ -162,16 +161,16 @@ def run_radar(settings: Settings, now: datetime | None = None) -> RunRecord:
         run.status = RunStatus.SUCCESS
         run.ended_at = run_time if deterministic_end else datetime.now(UTC)
         store.save_run(run)
+
+        seen_updates = {}
         for candidate_id, candidate in run.candidates.items():
             if candidate.terminal_status is not None:
-                store.mark_seen(
-                    candidate_id,
-                    {
-                        "url": str(candidate.source.url),
-                        "terminal_status": candidate.terminal_status.value,
-                        "run_id": run.run_id,
-                    },
-                )
+                seen_updates[candidate_id] = {
+                    "url": str(candidate.source.url),
+                    "terminal_status": candidate.terminal_status.value,
+                    "run_id": run.run_id,
+                }
+        store.mark_seen_many(seen_updates)
         logger.info("run success: %s", run.run_id)
         return run
     except GraphInvariantError as exc:

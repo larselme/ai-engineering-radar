@@ -25,13 +25,18 @@ class JsonStore:
         with self.seen_items_path.open(encoding="utf-8") as file:
             return json.load(file)
 
-    def mark_seen(self, candidate_id: str, payload: dict) -> None:
+    def mark_seen_many(self, updates: dict[str, dict]) -> None:
+        if not updates:
+            return
         seen_items = self.load_seen_items()
-        seen_items[candidate_id] = payload
+        seen_items.update(updates)
         self._write_atomic(
             self.seen_items_path,
             json.dumps(seen_items, indent=2),
         )
+
+    def mark_seen(self, candidate_id: str, payload: dict) -> None:
+        self.mark_seen_many({candidate_id: payload})
 
     def save_run(self, run: RunRecord) -> Path:
         path = self.runs_dir / f"{run.run_id}.json"

@@ -97,7 +97,7 @@ def test_source_errors_are_retained_without_failing_run(monkeypatch):
 
 
 @pytest.mark.parametrize("ended_at", [NOW - timedelta(hours=1), None])
-def test_previous_success_sets_collection_watermark(monkeypatch, ended_at):
+def test_previous_success_is_audit_metadata_not_collection_watermark(monkeypatch, ended_at):
     previous = RunRecord(
         run_id="previous",
         started_at=NOW - timedelta(days=2),
@@ -114,9 +114,36 @@ def test_previous_success_sets_collection_watermark(monkeypatch, ended_at):
 
     run = main.run_radar(settings(), NOW)
 
-    expected = ended_at or previous.started_at
-    assert captured["since"] == expected
-    assert run.previous_successful_run == expected
+    expected_previous = ended_at or previous.started_at
+    assert captured["since"] == NOW - timedelta(days=7)
+    assert run.previous_successful_run == expected_previous
+    assert run.metadata["collection_since"] == (NOW - timedelta(days=7)).isoformat()
+
+
+def test_successful_run_uses_single_batch_seen_update(monkeypatch):
+    items = [item("accept"), item("reject")]
+    statuses = iter([
+        CandidateTerminalStatus.ACCEPT,
+        CandidateTerminalStatus.REJECT,
+    ])
+    setup_run(
+        monkeypatch,
+        items,
+        lambda current, *args, **kwargs: candidate(current.id, next(statuses)),
+    )
+
+    seen_updates = {}
+    monkeypatch.setattr(
+        JsonStore,
+        "mark_seen_many",
+        lambda self, updates: seen_updates.setdefault("updates", updates.copy()) or None,
+    )
+
+    run = main.run_radar(settings(), NOW)
+
+    assert run.status is RunStatus.SUCCESS
+    assert set(seen_updates["updates"]) == {"accept", "reject"}
+    assert all(payload["run_id"] == run.run_id for payload in seen_updates["updates"].values())
 
 
 def test_naive_now_is_rejected():

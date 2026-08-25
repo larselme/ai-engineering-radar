@@ -145,6 +145,31 @@ def test_mark_seen_updates_existing_entry(tmp_path: Path) -> None:
     assert store.load_seen_items() == {"candidate-1": {"title": "New"}}
 
 
+def test_mark_seen_many_merges_updates_without_losing_existing_entries(
+    tmp_path: Path,
+) -> None:
+    store = make_store(tmp_path)
+    store.mark_seen_many({"candidate-1": {"title": "First"}})
+    store.mark_seen_many({
+        "candidate-2": {"title": "Second"},
+        "candidate-1": {"title": "Updated"},
+    })
+
+    assert store.load_seen_items() == {
+        "candidate-1": {"title": "Updated"},
+        "candidate-2": {"title": "Second"},
+    }
+
+
+def test_mark_seen_many_no_op_for_empty_mapping(tmp_path: Path) -> None:
+    store = make_store(tmp_path)
+    store.mark_seen("candidate-1", {"title": "First"})
+
+    store.mark_seen_many({})
+
+    assert store.load_seen_items() == {"candidate-1": {"title": "First"}}
+
+
 def test_atomic_writes_leave_valid_json(tmp_path: Path) -> None:
     store = make_store(tmp_path)
     store.mark_seen("candidate-1", {"title": "Announcement"})
