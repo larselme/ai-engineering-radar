@@ -111,12 +111,26 @@ def test_canonicalization_removes_all_common_tracking_parameters():
 
 
 def test_duplicate_urls_collapse(monkeypatch):
-    from collector import collector
-    item = SourceItem(id="a", source_name="A", title="A", url="https://example.com/a#x", published_at=datetime.now(UTC), content="x", content_hash="h")
+    items = [
+        SourceItem(id="a", source_name="A", title="A", url="https://example.com/a?utm_source=x#one", published_at=datetime.now(UTC), content="x", content_hash="h1"),
+        SourceItem(id="b", source_name="A", title="B", url="https://example.com/a", published_at=datetime.now(UTC), content="y", content_hash="h2"),
+    ]
     import collector.rss as rss
-    monkeypatch.setattr(rss, "collect_rss", lambda s, since: [item])
+    monkeypatch.setattr(rss, "collect_rss", lambda s, since: items)
     result, errors = collect_sources([source(SourceKind.RSS, "https://example.com/feed")], datetime.now(UTC))
     assert len(result) == 1 and not errors
+
+
+def test_different_urls_with_same_content_hash_survive(monkeypatch):
+    items = [
+        SourceItem(id="a", source_name="A", title="A", url="https://example.com/a", published_at=datetime.now(UTC), content="same", content_hash="same"),
+        SourceItem(id="b", source_name="A", title="B", url="https://example.com/b", published_at=datetime.now(UTC), content="same", content_hash="same"),
+    ]
+    import collector.rss as rss
+    monkeypatch.setattr(rss, "collect_rss", lambda s, since: items)
+    result, errors = collect_sources([source(SourceKind.RSS, "https://example.com/feed")], datetime.now(UTC))
+    assert result == items
+    assert not errors
 
 
 def test_one_source_failure_is_reported_and_other_results_survive(monkeypatch):

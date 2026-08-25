@@ -13,13 +13,13 @@
   {
     "name": "Google AI/developer announcements",
     "kind": "webpage",
-    "url": "https://developers.googleblog.com/en/",
+    "url": "https://developers.googleblog.com/en/search/?tag=AI",
     "article_url_prefixes": ["https://developers.googleblog.com/en/"]
   },
   {
     "name": "GitHub Copilot/agentic changelog",
     "kind": "rss",
-    "url": "https://github.blog/changelog/feed/"
+    "url": "https://github.blog/changelog/label/copilot/feed/"
   },
   {
     "name": "LangChain/LangGraph official blog",

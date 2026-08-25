@@ -21,7 +21,7 @@ def _parse_date(value: str | None) -> datetime | None:
         parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
     except ValueError:
         return None
-    return parsed.astimezone(UTC) if parsed.tzinfo else None
+    return parsed.astimezone(UTC) if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def _jsonld_date(soup: BeautifulSoup) -> datetime | None:
@@ -56,7 +56,10 @@ def collect_webpage(source: SourceConfig, since: datetime) -> list[SourceItem]:
         index_soup = BeautifulSoup(index_response.text, "html.parser")
         links: list[tuple[str, datetime | None]] = []
         for anchor in index_soup.select("a[href]"):
-            url = urljoin(str(source.url), anchor["href"])
+            href = anchor.get("href")
+            if not href or href.strip().lower() == "none":
+                continue
+            url = urljoin(str(source.url), href)
             if not any(url.startswith(prefix) for prefix in source.article_url_prefixes):
                 continue
             date = None

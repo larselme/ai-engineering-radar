@@ -53,10 +53,14 @@ def collect_sources(
     seen_urls: set[str] = set()
     seen_content: set[str] = set()
     for item in items:
-        url = canonicalize_url(str(item.url))
-        if url in seen_urls or item.content_hash in seen_content:
+        url = canonicalize_url(str(item.url).strip())
+        if url:
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+        elif item.content_hash in seen_content:
             continue
-        seen_urls.add(url)
-        seen_content.add(item.content_hash)
+        else:
+            seen_content.add(item.content_hash)
         unique.append(item)
     return unique, source_errors
