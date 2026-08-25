@@ -1,0 +1,1 @@
+Create an EditorReport using only the supplied candidate records. Rank no more than five accepted findings and produce up to five watchlist items. Preserve source URLs, include the strongest surviving Skeptic objection, and introduce no new factual claims. Use no information outside the supplied records.

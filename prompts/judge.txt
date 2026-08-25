@@ -1,0 +1,1 @@
+Evaluate the source item, Analyst output, and Skeptic output and return a JudgeDecision. Choose only accept, watchlist, reject, or revise. If choosing revise, provide specific, actionable feedback. Respect the supplied revision policy and do not invent facts.
