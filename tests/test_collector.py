@@ -1,8 +1,12 @@
 from datetime import UTC, datetime
 from pathlib import Path
+import ssl
+import sys
+import types
 
 import pytest
 from collector.collector import candidate_id, canonicalize_url, collect_sources
+from collector.http import client_kwargs
 from collector.rss import collect_rss
 from collector.webpage import collect_webpage
 from models.schemas import SourceConfig, SourceKind, SourceItem
@@ -42,6 +46,33 @@ class FakeClient:
         return response
 
 
+def test_http_client_uses_truststore_when_available(monkeypatch):
+    fake_truststore = types.SimpleNamespace(
+        SSLContext=lambda protocol: ("truststore-context", protocol)
+    )
+    monkeypatch.setitem(sys.modules, "truststore", fake_truststore)
+
+    kwargs = client_kwargs()
+
+    assert kwargs["verify"] == ("truststore-context", ssl.PROTOCOL_TLS_CLIENT)
+
+
+def test_http_client_omits_verify_override_without_truststore(monkeypatch):
+    monkeypatch.delitem(sys.modules, "truststore", raising=False)
+    real_import = __import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "truststore":
+            raise ImportError("missing truststore")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.__import__", fake_import)
+
+    kwargs = client_kwargs()
+
+    assert "verify" not in kwargs
+
+
 def source(kind, url="https://example.com/index", **kwargs):
     return SourceConfig(name="Example", kind=kind, url=url, **kwargs)
 
@@ -49,7 +80,7 @@ def source(kind, url="https://example.com/index", **kwargs):
 def test_rss_date_filtering_and_utc_normalization(monkeypatch):
     from collector import rss
     FakeClient.responses = {"https://example.com/feed": FakeResponse((FIXTURES / "sample_feed.xml").read_text())}
-    monkeypatch.setattr(rss.httpx, "Client", FakeClient)
+    monkeypatch.setattr(rss, "create_client", lambda: FakeClient())
     items = collect_rss(source(SourceKind.RSS, "https://example.com/feed"), datetime(2026, 8, 25, tzinfo=UTC))
     assert [item.title for item in items] == ["Fresh"]
     assert items[0].published_at == datetime(2026, 8, 25, 8, tzinfo=UTC)
@@ -66,7 +97,7 @@ def test_webpage_extracts_articles_and_index_time(monkeypatch):
             "<main><h1>JSON title</h1>long text</main>"
         ),
     }
-    monkeypatch.setattr(webpage.httpx, "Client", FakeClient)
+    monkeypatch.setattr(webpage, "create_client", lambda: FakeClient())
     items = collect_webpage(source(SourceKind.WEBPAGE, base, article_url_prefixes=["https://example.com/articles/"]), datetime(2026, 8, 25, tzinfo=UTC))
     assert len(items) == 2
     assert items[0].published_at == datetime(2026, 8, 25, 8, tzinfo=UTC)
@@ -83,7 +114,7 @@ def test_webpage_fallbacks_to_json_ld_date(monkeypatch):
             "<main>Body</main>"
         ),
     }
-    monkeypatch.setattr(webpage.httpx, "Client", FakeClient)
+    monkeypatch.setattr(webpage, "create_client", lambda: FakeClient())
     items = collect_webpage(source(SourceKind.WEBPAGE, base, article_url_prefixes=["https://example.com/articles/"]), datetime(2026, 8, 25, tzinfo=UTC))
     assert items[0].published_at == datetime(2026, 8, 25, 9, tzinfo=UTC)
 
@@ -95,7 +126,7 @@ def test_content_is_capped(monkeypatch):
         base: FakeResponse('<a href="/articles/long">Long</a><time datetime="2026-08-25T00:00:00Z"></time>'),
         "https://example.com/articles/long": FakeResponse("<article>" + ("x" * 30000) + "</article>"),
     }
-    monkeypatch.setattr(webpage.httpx, "Client", FakeClient)
+    monkeypatch.setattr(webpage, "create_client", lambda: FakeClient())
     assert len(collect_webpage(source(SourceKind.WEBPAGE, base, article_url_prefixes=["https://example.com/articles/"]), datetime(2026, 8, 24, tzinfo=UTC))[0].content) == 25000
 
 

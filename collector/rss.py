@@ -4,13 +4,12 @@ import hashlib
 import re
 
 import feedparser
-import httpx
 from bs4 import BeautifulSoup
 
+from collector.http import create_client
 from models.schemas import SourceConfig, SourceItem
 from collector.collector import candidate_id
 
-USER_AGENT = "ai-engineering-radar/0.1"
 MAX_CONTENT_LENGTH = 25_000
 
 
@@ -33,9 +32,7 @@ def _text(value: str) -> str:
 
 
 def collect_rss(source: SourceConfig, since: datetime) -> list[SourceItem]:
-    with httpx.Client(
-        timeout=20, follow_redirects=True, headers={"User-Agent": USER_AGENT}
-    ) as client:
+    with create_client() as client:
         response = client.get(str(source.url))
         response.raise_for_status()
 

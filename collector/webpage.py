@@ -4,13 +4,12 @@ import json
 import re
 from urllib.parse import urljoin
 
-import httpx
 from bs4 import BeautifulSoup
 
 from collector.collector import candidate_id
+from collector.http import create_client
 from models.schemas import SourceConfig, SourceItem
 
-USER_AGENT = "ai-engineering-radar/0.1"
 MAX_CONTENT_LENGTH = 25_000
 
 
@@ -48,9 +47,7 @@ def _text(element) -> str:
 
 
 def collect_webpage(source: SourceConfig, since: datetime) -> list[SourceItem]:
-    with httpx.Client(
-        timeout=20, follow_redirects=True, headers={"User-Agent": USER_AGENT}
-    ) as client:
+    with create_client() as client:
         index_response = client.get(str(source.url))
         index_response.raise_for_status()
         index_soup = BeautifulSoup(index_response.text, "html.parser")
