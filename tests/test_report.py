@@ -19,13 +19,15 @@ from reporting.markdown import (
 )
 
 
-def candidate(candidate_id: str, status: str) -> CandidateRecord:
+def candidate(
+    candidate_id: str, status: str, source_url: str | None = None
+) -> CandidateRecord:
     return CandidateRecord(
         source=SourceItem(
             id=candidate_id,
             source_name="Source",
             title=f"Source {candidate_id}",
-            url=f"https://example.com/{candidate_id}",
+            url=source_url or f"https://example.com/{candidate_id}",
             published_at=datetime(2026, 8, 25, tzinfo=UTC),
             content="Content",
             content_hash=f"hash-{candidate_id}",
@@ -135,13 +137,18 @@ def test_validate_editor_report_rejects_duplicates(run: RunRecord, section: str)
 
 
 def test_validate_editor_report_rejects_url_in_both_sections(run: RunRecord) -> None:
+    shared_url = "https://example.com/shared"
+    run.candidates["accepted-1"] = candidate("accepted-1", "accept", shared_url)
+    run.candidates["watchlist-1"] = candidate("watchlist-1", "watchlist", shared_url)
     report = EditorReport(
-        top_findings=[finding("https://example.com/accepted-1")],
-        watchlist=[finding("https://example.com/accepted-1")],
+        top_findings=[finding(shared_url)],
+        watchlist=[finding(shared_url)],
     )
-    run.watchlist_ids.append("accepted-1")
 
-    with pytest.raises(ReportValidationError):
+    with pytest.raises(
+        ReportValidationError,
+        match="a source URL must not appear in both top_findings and watchlist",
+    ):
         validate_editor_report(report, run)
 
 
