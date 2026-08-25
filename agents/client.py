@@ -10,7 +10,7 @@ _TRANSIENT_ERRORS = (RateLimitError, APITimeoutError, APIConnectionError)
 
 class StructuredOpenAIClient:
     def __init__(self, api_key: str):
-        self._client = OpenAI(api_key=api_key)
+        self._client = OpenAI(api_key=api_key, max_retries=0)
 
     def parse(self, model: str, prompt: str, result_type: type[T]) -> T:
         transient_attempts = 3

@@ -153,6 +153,20 @@ def test_editor_asks_for_report_and_receives_only_passed_candidates() -> None:
     assert "REJECTED CANDIDATES:" not in prompt
 
 
+def test_client_disables_openai_sdk_retries(monkeypatch) -> None:
+    captured = {}
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr("agents.client.OpenAI", FakeOpenAI)
+
+    StructuredOpenAIClient("test-api-key")
+
+    assert captured == {"api_key": "test-api-key", "max_retries": 0}
+
+
 @pytest.mark.parametrize(
     "error_type",
     [RateLimitError, APITimeoutError, APIConnectionError],
