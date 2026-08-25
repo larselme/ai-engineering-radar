@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+logs/*.log
+runs/*.json
+output/*.md
+state/seen_items.json.tmp
