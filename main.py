@@ -5,7 +5,7 @@ from functools import partial
 from pathlib import Path
 
 from agents.analyst import run_analyst
-from agents.client import StructuredOpenAIClient
+from agents.client import StructuredCopilotClient
 from agents.editor import run_editor
 from agents.judge import run_judge
 from agents.skeptic import run_skeptic
@@ -120,7 +120,10 @@ def run_radar(settings: Settings, now: datetime | None = None) -> RunRecord:
         logger.info("collection end: %d items", len(items))
 
         seen_items = store.load_seen_items()
-        client = StructuredOpenAIClient(settings.openai_api_key)
+        client = StructuredCopilotClient(
+            settings.copilot_github_token,
+            use_logged_in_user=settings.use_logged_in_copilot,
+        )
         analyst = partial(run_analyst, client, settings.analyst_model)
         skeptic = partial(run_skeptic, client, settings.skeptic_model)
         judge = partial(run_judge, client, settings.judge_model)

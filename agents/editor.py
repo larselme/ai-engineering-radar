@@ -1,10 +1,10 @@
 from config import PROMPTS_DIR
 from models.schemas import CandidateRecord, EditorReport
-from agents.client import StructuredOpenAIClient
+from agents.client import StructuredCopilotClient
 
 
 def run_editor(
-    client: StructuredOpenAIClient,
+    client: StructuredCopilotClient,
     model: str,
     accepted: list[CandidateRecord],
     watchlist: list[CandidateRecord],

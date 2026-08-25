@@ -18,18 +18,27 @@ load_dotenv(ROOT_DIR / ".env")
 class Settings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    openai_api_key: str
-    analyst_model: str = "gpt-5.6-luna"
-    skeptic_model: str = "gpt-5.6-luna"
-    judge_model: str = "gpt-5.6-luna"
-    editor_model: str = "gpt-5.6-luna"
+    copilot_github_token: str | None = None
+    use_logged_in_copilot: bool = True
+    analyst_model: str = "gpt-5.4"
+    skeptic_model: str = "gpt-5.4"
+    judge_model: str = "gpt-5.4"
+    editor_model: str = "gpt-5.4"
     max_revisions: int = 2
 
 
 def load_settings() -> Settings:
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if not openai_api_key:
-        raise ValueError("OPENAI_API_KEY is required")
+    copilot_github_token = os.getenv("COPILOT_GITHUB_TOKEN")
+    use_logged_in_copilot = os.getenv("USE_LOGGED_IN_COPILOT", "true").lower() not in {
+        "0",
+        "false",
+        "no",
+    }
+
+    if not use_logged_in_copilot and not copilot_github_token:
+        raise ValueError(
+            "COPILOT_GITHUB_TOKEN is required when USE_LOGGED_IN_COPILOT is false"
+        )
 
     max_revisions_raw = os.getenv("MAX_REVISIONS", "2")
     try:
@@ -41,10 +50,11 @@ def load_settings() -> Settings:
         raise ValueError("MAX_REVISIONS must be 2 for v1")
 
     return Settings(
-        openai_api_key=openai_api_key,
-        analyst_model=os.getenv("ANALYST_MODEL", "gpt-5.6-luna"),
-        skeptic_model=os.getenv("SKEPTIC_MODEL", "gpt-5.6-luna"),
-        judge_model=os.getenv("JUDGE_MODEL", "gpt-5.6-luna"),
-        editor_model=os.getenv("EDITOR_MODEL", "gpt-5.6-luna"),
+        copilot_github_token=copilot_github_token,
+        use_logged_in_copilot=use_logged_in_copilot,
+        analyst_model=os.getenv("ANALYST_MODEL", "gpt-5.4"),
+        skeptic_model=os.getenv("SKEPTIC_MODEL", "gpt-5.4"),
+        judge_model=os.getenv("JUDGE_MODEL", "gpt-5.4"),
+        editor_model=os.getenv("EDITOR_MODEL", "gpt-5.4"),
         max_revisions=max_revisions,
     )

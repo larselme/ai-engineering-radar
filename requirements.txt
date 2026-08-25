@@ -1,4 +1,4 @@
-openai>=2,<3
+github-copilot-sdk>=1,<2
 pydantic>=2.11,<3
 httpx>=0.28,<1
 feedparser>=6,<7

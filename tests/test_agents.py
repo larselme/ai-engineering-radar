@@ -1,13 +1,9 @@
 from datetime import UTC, datetime
-from types import SimpleNamespace
-
-import httpx
 import pytest
-from openai import APIConnectionError, APITimeoutError, RateLimitError
 from pydantic import ValidationError
 
 from agents.analyst import run_analyst
-from agents.client import StructuredOpenAIClient
+from agents.client import StructuredCopilotClient
 from agents.editor import run_editor
 from agents.judge import run_judge
 from agents.skeptic import run_skeptic
@@ -153,50 +149,26 @@ def test_editor_asks_for_report_and_receives_only_passed_candidates() -> None:
     assert "REJECTED CANDIDATES:" not in prompt
 
 
-def test_client_disables_openai_sdk_retries(monkeypatch) -> None:
-    captured = {}
+def test_client_keeps_copilot_auth_configuration() -> None:
+    client = StructuredCopilotClient("test-token", use_logged_in_user=False)
 
-    class FakeOpenAI:
-        def __init__(self, **kwargs):
-            captured.update(kwargs)
-
-    monkeypatch.setattr("agents.client.OpenAI", FakeOpenAI)
-
-    StructuredOpenAIClient("test-api-key")
-
-    assert captured == {"api_key": "test-api-key", "max_retries": 0}
+    assert client._github_token == "test-token"
+    assert client._use_logged_in_user is False
 
 
-@pytest.mark.parametrize(
-    "error_type",
-    [RateLimitError, APITimeoutError, APIConnectionError],
-)
-def test_transient_failures_are_retried_at_most_three_attempts(
-    monkeypatch, error_type
-) -> None:
+def test_transient_failures_are_retried_at_most_three_attempts(monkeypatch) -> None:
     calls = 0
 
-    class FakeResponses:
-        def parse(self, **kwargs):
-            nonlocal calls
-            calls += 1
-            if error_type is RateLimitError:
-                request = httpx.Request("POST", "https://example.com")
-                raise RateLimitError(
-                    "temporary",
-                    response=httpx.Response(429, request=request),
-                    body={},
-                )
-            request = httpx.Request("GET", "https://example.com")
-            if error_type is APITimeoutError:
-                raise APITimeoutError(request)
-            raise APIConnectionError(message="temporary", request=request)
+    async def fail(*_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        raise RuntimeError("temporary")
 
-    client = object.__new__(StructuredOpenAIClient)
-    client._client = SimpleNamespace(responses=FakeResponses())
+    client = StructuredCopilotClient("test-token")
+    monkeypatch.setattr(client, "_send_prompt", fail)
     monkeypatch.setattr("agents.client.time.sleep", lambda _: None)
 
-    with pytest.raises(error_type):
+    with pytest.raises(RuntimeError, match="temporary"):
         client.parse("model", "prompt", AnalysisResult)
     assert calls == 3
 
@@ -206,17 +178,16 @@ def test_missing_parsed_output_is_retried_once_then_raised(
 ) -> None:
     calls = 0
 
-    class FakeResponses:
-        def parse(self, **kwargs):
-            nonlocal calls
-            calls += 1
-            return SimpleNamespace(output_parsed=None)
+    async def respond(*_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        return "not json"
 
-    client = object.__new__(StructuredOpenAIClient)
-    client._client = SimpleNamespace(responses=FakeResponses())
+    client = StructuredCopilotClient("test-token")
+    monkeypatch.setattr(client, "_send_prompt", respond)
     monkeypatch.setattr("agents.client.time.sleep", lambda _: None)
 
-    with pytest.raises(ValueError, match="parsed"):
+    with pytest.raises(ValueError, match="valid JSON"):
         client.parse("model", "prompt", AnalysisResult)
     assert calls == 2
 
@@ -226,14 +197,13 @@ def test_invalid_parsed_output_is_retried_once_then_raised(
 ) -> None:
     calls = 0
 
-    class FakeResponses:
-        def parse(self, **kwargs):
-            nonlocal calls
-            calls += 1
-            return SimpleNamespace(output_parsed={"confidence": "not-a-number"})
+    async def respond(*_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        return '{"confidence": "not-a-number"}'
 
-    client = object.__new__(StructuredOpenAIClient)
-    client._client = SimpleNamespace(responses=FakeResponses())
+    client = StructuredCopilotClient("test-token")
+    monkeypatch.setattr(client, "_send_prompt", respond)
     monkeypatch.setattr("agents.client.time.sleep", lambda _: None)
 
     with pytest.raises(ValidationError):

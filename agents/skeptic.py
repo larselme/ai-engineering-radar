@@ -1,10 +1,10 @@
 from config import PROMPTS_DIR
 from models.schemas import AnalysisResult, CritiqueResult, SourceItem
-from agents.client import StructuredOpenAIClient
+from agents.client import StructuredCopilotClient
 
 
 def run_skeptic(
-    client: StructuredOpenAIClient,
+    client: StructuredCopilotClient,
     model: str,
     item: SourceItem,
     analysis: AnalysisResult,

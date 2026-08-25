@@ -24,7 +24,7 @@ NOW = datetime(2026, 8, 25, 12, tzinfo=UTC)
 def settings():
     from config import Settings
 
-    return Settings(openai_api_key="test-key")
+    return Settings(copilot_github_token="test-token", use_logged_in_copilot=False)
 
 
 def item(candidate_id: str) -> SourceItem:
@@ -54,7 +54,11 @@ def setup_run(monkeypatch, items, process=None, editor=fake_report):
         lambda: [SourceConfig(name="Official", kind="rss", url="https://example.com")],
     )
     monkeypatch.setattr(main, "collect_sources", lambda sources, since: (items, {}))
-    monkeypatch.setattr(main, "StructuredOpenAIClient", lambda key: object())
+    monkeypatch.setattr(
+        main,
+        "StructuredCopilotClient",
+        lambda token, use_logged_in_user=True: object(),
+    )
     monkeypatch.setattr(main, "run_editor", editor)
     if process is not None:
         monkeypatch.setattr(main, "process_candidate", process)
@@ -72,7 +76,11 @@ def test_first_run_uses_seven_day_window_and_validates_sources(monkeypatch):
         SourceConfig(name="Official", kind="rss", url="https://example.com")
     ])
     monkeypatch.setattr(main, "collect_sources", collect)
-    monkeypatch.setattr(main, "StructuredOpenAIClient", lambda key: object())
+    monkeypatch.setattr(
+        main,
+        "StructuredCopilotClient",
+        lambda token, use_logged_in_user=True: object(),
+    )
     monkeypatch.setattr(main, "run_editor", fake_report)
 
     run = main.run_radar(settings(), NOW)

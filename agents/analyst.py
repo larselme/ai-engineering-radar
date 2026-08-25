@@ -1,10 +1,10 @@
 from config import PROMPTS_DIR
 from models.schemas import AnalysisResult, SourceItem
-from agents.client import StructuredOpenAIClient
+from agents.client import StructuredCopilotClient
 
 
 def run_analyst(
-    client: StructuredOpenAIClient,
+    client: StructuredCopilotClient,
     model: str,
     item: SourceItem,
     previous_analysis: AnalysisResult | None = None,

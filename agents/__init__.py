@@ -1,1 +1,1 @@
-"""OpenAI-facing bounded agent contracts."""
+"""GitHub Copilot-facing bounded agent contracts."""
