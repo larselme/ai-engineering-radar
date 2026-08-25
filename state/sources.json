@@ -1,0 +1,34 @@
+[
+  {
+    "name": "OpenAI News",
+    "kind": "rss",
+    "url": "https://openai.com/news/rss.xml"
+  },
+  {
+    "name": "Anthropic News",
+    "kind": "webpage",
+    "url": "https://www.anthropic.com/news",
+    "article_url_prefixes": ["https://www.anthropic.com/news/"]
+  },
+  {
+    "name": "Google AI/developer announcements",
+    "kind": "webpage",
+    "url": "https://developers.googleblog.com/en/",
+    "article_url_prefixes": ["https://developers.googleblog.com/en/"]
+  },
+  {
+    "name": "GitHub Copilot/agentic changelog",
+    "kind": "rss",
+    "url": "https://github.blog/changelog/feed/"
+  },
+  {
+    "name": "LangChain/LangGraph official blog",
+    "kind": "rss",
+    "url": "https://www.langchain.com/blog/rss.xml"
+  },
+  {
+    "name": "Model Context Protocol official blog",
+    "kind": "rss",
+    "url": "https://blog.modelcontextprotocol.io/index.xml"
+  }
+]

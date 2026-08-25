@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Official</title>
+<item><title>Fresh</title><link>https://example.com/post?utm_source=x&amp;keep=1</link>
+<pubDate>Tue, 25 Aug 2026 10:00:00 +0200</pubDate><description><![CDATA[Fresh summary]]></description></item>
+<item><title>Old</title><link>https://example.com/old</link>
+<pubDate>Mon, 24 Aug 2026 10:00:00 +0000</pubDate><description>Old summary</description></item>
+</channel></rss>
