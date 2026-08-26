@@ -14,6 +14,8 @@ from models.schemas import (
     EditorReport,
     JudgeDecision,
     SourceItem,
+    TriageTraceStep,
+    TriageTool,
 )
 
 
@@ -81,6 +83,62 @@ def test_analyst_revision_prompt_includes_previous_analysis_and_feedback() -> No
     prompt = client.calls[0][1]
     assert "Clarify the availability status." in prompt
     assert analysis().summary in prompt
+
+
+def test_triage_evidence_is_included_in_agent_prompts() -> None:
+    trace = [
+        TriageTraceStep(
+            step_number=1,
+            tool=TriageTool.SUMMARIZE,
+            reason="baseline",
+            network_scope="none",
+            started_at=datetime(2026, 8, 25, tzinfo=UTC),
+            completed_at=datetime(2026, 8, 25, tzinfo=UTC),
+            observation="summary",
+            tokens_used=1,
+            estimated_cost=0,
+        )
+    ]
+    triage_summary = "triage summary"
+
+    analyst_client = FakeClient(analysis())
+    run_analyst(
+        analyst_client,
+        "analyst-model",
+        source_item(),
+        triage_summary=triage_summary,
+        triage_trace=trace,
+    )
+    assert "TRIAGE EVIDENCE" in analyst_client.calls[0][1]
+    assert triage_summary in analyst_client.calls[0][1]
+
+    skeptic_client = FakeClient(critique())
+    run_skeptic(
+        skeptic_client,
+        "skeptic-model",
+        source_item(),
+        analysis(),
+        triage_summary=triage_summary,
+        triage_trace=trace,
+    )
+    assert "TRIAGE EVIDENCE" in skeptic_client.calls[0][1]
+    assert triage_summary in skeptic_client.calls[0][1]
+
+    judge_client = FakeClient(
+        JudgeDecision(status="accept", reason="Strong evidence.", confidence=0.9)
+    )
+    run_judge(
+        judge_client,
+        "judge-model",
+        source_item(),
+        analysis(),
+        critique(),
+        allow_revision=True,
+        triage_summary=triage_summary,
+        triage_trace=trace,
+    )
+    assert "TRIAGE EVIDENCE" in judge_client.calls[0][1]
+    assert triage_summary in judge_client.calls[0][1]
 
 
 def test_skeptic_asks_for_critique_and_includes_source_and_analysis() -> None:

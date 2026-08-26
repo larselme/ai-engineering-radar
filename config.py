@@ -20,6 +20,7 @@ class Settings(BaseModel):
 
     copilot_github_token: str | None = None
     use_logged_in_copilot: bool = True
+    triage_model: str = "gpt-5.4"
     analyst_model: str = "gpt-5.4"
     skeptic_model: str = "gpt-5.4"
     judge_model: str = "gpt-5.4"
@@ -52,6 +53,7 @@ def load_settings() -> Settings:
     return Settings(
         copilot_github_token=copilot_github_token,
         use_logged_in_copilot=use_logged_in_copilot,
+        triage_model=os.getenv("TRIAGE_MODEL", "gpt-5.4"),
         analyst_model=os.getenv("ANALYST_MODEL", "gpt-5.4"),
         skeptic_model=os.getenv("SKEPTIC_MODEL", "gpt-5.4"),
         judge_model=os.getenv("JUDGE_MODEL", "gpt-5.4"),

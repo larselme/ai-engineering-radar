@@ -42,6 +42,13 @@ class RunStatus(StrEnum):
     SUCCESS = "success"
 
 
+class TriageTool(StrEnum):
+    SUMMARIZE = "summarize"
+    FACT_CHECK = "fact_check"
+    COMPARE_SOURCES = "compare_sources"
+    RISK_CHECK = "risk_check"
+
+
 class SourceConfig(BaseModel):
     name: str
     kind: SourceKind
@@ -88,6 +95,57 @@ class JudgeDecision(BaseModel):
         return self
 
 
+class TriageAction(BaseModel):
+    tool: TriageTool
+    reason: str
+    network_scope: str = "none"
+
+
+class TriageDecision(BaseModel):
+    done: bool = False
+    action: TriageAction | None = None
+    final_summary: str = ""
+
+    @model_validator(mode="after")
+    def validate_transition(self) -> Self:
+        if self.done:
+            if self.action is not None:
+                raise ValueError("action must be omitted when done is true")
+            if not self.final_summary.strip():
+                raise ValueError("final_summary is required when done is true")
+            return self
+        if self.action is None:
+            raise ValueError("action is required when done is false")
+        if self.final_summary.strip():
+            raise ValueError("final_summary must be empty when done is false")
+        return self
+
+
+class TriageToolResult(BaseModel):
+    observation: str
+    tokens_used: int = Field(default=0, ge=0)
+    estimated_cost: float = Field(default=0, ge=0)
+
+
+class TriageTraceStep(BaseModel):
+    step_number: int = Field(ge=1)
+    tool: TriageTool
+    reason: str
+    network_scope: str
+    started_at: datetime
+    completed_at: datetime
+    observation: str
+    tokens_used: int = Field(default=0, ge=0)
+    estimated_cost: float = Field(default=0, ge=0)
+
+
+class TriageOutcome(BaseModel):
+    summary: str
+    trace: list[TriageTraceStep] = Field(default_factory=list)
+    total_tokens: int = Field(default=0, ge=0)
+    total_cost: float = Field(default=0, ge=0)
+
+
 class CandidateRecord(BaseModel):
     source: SourceItem
     analyses: list[AnalysisResult] = Field(default_factory=list)
@@ -96,6 +154,8 @@ class CandidateRecord(BaseModel):
     revision_count: int = Field(default=0, ge=0)
     terminal_status: CandidateTerminalStatus | None = None
     error: str | None = None
+    triage_summary: str | None = None
+    triage_trace: list[TriageTraceStep] = Field(default_factory=list)
 
 
 class EditorFinding(BaseModel):

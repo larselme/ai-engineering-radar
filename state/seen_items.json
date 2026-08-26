@@ -1,1 +1,77 @@
-{}
+{
+  "b9406ae170bd91336ab3bb25f8a481be998406cd07a127a0b7b7880fe2ac0b53": {
+    "url": "https://openai.com/index/jalapeno-first-results",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "62003111f3b592c56acd9673289136816214f0ea1151bdbce20616ed93526390": {
+    "url": "https://openai.com/index/disrupting-malicious-uses-of-ai-influence-campaign-russia",
+    "terminal_status": "watchlist",
+    "run_id": "20260826T094724Z"
+  },
+  "abd52c9f1dde403ea312fe1dcc8f2b7fc27a242eb1ec73041b234fa7076d6a46": {
+    "url": "https://openai.com/index/gpt-5-6-in-kiro",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "fc1a9abd82b35a9c86d54b1fb0f68bd137a90ec86cea086cc68200bb6a148bdd": {
+    "url": "https://openai.com/index/introducing-ai-futures",
+    "terminal_status": "watchlist",
+    "run_id": "20260826T094724Z"
+  },
+  "ad89fb510e3c78c26282cfd40541dc61653b3d8c142b323e38b2c22c1766bfa5": {
+    "url": "https://openai.com/index/stampli",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "df8f12302a5b421ac18657dd3c98b85f0bbbcdb55f27a7a2a1e94cd20d3dde6b": {
+    "url": "https://openai.com/index/offering-zero-data-retention-for-frontier-models",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "eb80560ee1a000d14de3d669be5f605da687d21ac9912d8ed95e310a58e3348a": {
+    "url": "https://github.blog/changelog/2026-08-21-the-new-github-copilot-experience-in-slack",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "6ef374b8331e635cd82a815b920a680a5d04d0b26e4191930e7628d727eea1b0": {
+    "url": "https://github.blog/changelog/2026-08-21-shared-agentic-work-with-github-copilot-in-microsoft-teams",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "34691d4d3bab21f8809c0b2eb81afe57d3899101d6e5f3f6ea420c14a4cc2496": {
+    "url": "https://www.langchain.com/blog/self-correcting-memory-openwiki",
+    "terminal_status": "watchlist",
+    "run_id": "20260826T094724Z"
+  },
+  "403015ccb38abf9f95b4b48e9c04573560898ee6c0d54407636a51eea808667a": {
+    "url": "https://www.langchain.com/blog/building-agent-environments-and-tasks",
+    "terminal_status": "watchlist",
+    "run_id": "20260826T094724Z"
+  },
+  "6d8abedbe0ad0261694a64bbb3da79d8b2ebc532b2caae061a0bf346ae55658b": {
+    "url": "https://www.langchain.com/blog/how-toyota-north-america-put-enterprise-ai-on-the-balance-sheet-with-deep-agents-and-langsmith",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "4235792e910ea51a1970d2bc94e8dbe1a8826f728445f514a9e4c39030f3d506": {
+    "url": "https://www.langchain.com/blog/building-a-100x-cheaper-trace-judge-with-fireworks",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  },
+  "0699bffbf584860715e9f3f8d4f3c92c79d38abefb5f69a1fc6a270a5cfff6da": {
+    "url": "https://www.langchain.com/blog/langsmith-preview-builds-test-agent-changes-before-production",
+    "terminal_status": "watchlist",
+    "run_id": "20260826T094724Z"
+  },
+  "c4b4a85beb63030fee775799da8311a69c2c576290d8ccbfdcf644abb5b8b511": {
+    "url": "https://www.langchain.com/blog/introducing-langsmith-tuned-evaluators-starting-with-perceived-error",
+    "terminal_status": "watchlist",
+    "run_id": "20260826T094724Z"
+  },
+  "8a4d5416ea3b9763cd779889bc0e096c1b226129e84cd281407950f074895ac2": {
+    "url": "https://blog.modelcontextprotocol.io/posts/mcp-roadmap/",
+    "terminal_status": "accept",
+    "run_id": "20260826T094724Z"
+  }
+}

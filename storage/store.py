@@ -2,7 +2,7 @@ import json
 from collections.abc import Iterator
 from pathlib import Path
 
-from models.schemas import CandidateRecord, RunRecord, RunStatus
+from models.schemas import CandidateRecord, CandidateTerminalStatus, RunRecord, RunStatus
 
 
 class JsonStore:
@@ -59,9 +59,18 @@ class JsonStore:
         self,
         candidate_id: str,
     ) -> CandidateRecord | None:
+        reusable_statuses = {
+            CandidateTerminalStatus.ACCEPT,
+            CandidateTerminalStatus.WATCHLIST,
+            CandidateTerminalStatus.REJECT,
+        }
         runs = sorted(self.iter_runs(), key=lambda run: run.started_at, reverse=True)
         for run in runs:
             candidate = run.candidates.get(candidate_id)
-            if candidate is not None and candidate.terminal_status is not None:
+            if (
+                candidate is not None
+                and candidate.terminal_status is not None
+                and candidate.terminal_status in reusable_statuses
+            ):
                 return candidate
         return None

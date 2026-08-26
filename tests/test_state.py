@@ -255,3 +255,19 @@ def test_find_reusable_terminal_candidate_returns_newest_completed_copy(
     )
 
     assert store.find_reusable_terminal_candidate("candidate-1") == newest
+
+
+def test_find_reusable_terminal_candidate_ignores_error_terminal_status(
+    tmp_path: Path,
+) -> None:
+    store = make_store(tmp_path)
+    store.save_run(
+        make_run(
+            "failed",
+            datetime(2026, 8, 25, 10, tzinfo=UTC),
+            status=RunStatus.FAILED,
+            candidates={"candidate-1": make_candidate("candidate-1", "error")},
+        )
+    )
+
+    assert store.find_reusable_terminal_candidate("candidate-1") is None

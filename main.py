@@ -2,13 +2,13 @@ import json
 import logging
 from datetime import UTC, datetime, timedelta
 from functools import partial
-from pathlib import Path
 
 from agents.analyst import run_analyst
 from agents.client import StructuredCopilotClient
 from agents.editor import run_editor
 from agents.judge import run_judge
 from agents.skeptic import run_skeptic
+from agents.triage import run_triage_planner
 from collector.collector import collect_sources
 from config import LOGS_DIR, OUTPUT_DIR, STATE_DIR, RUNS_DIR, Settings, load_settings
 from models.schemas import (
@@ -17,9 +17,15 @@ from models.schemas import (
     RunRecord,
     RunStatus,
     SourceConfig,
-    SourceItem,
+    TriageTool,
 )
 from orchestration.graph import GraphInvariantError, process_candidate
+from orchestration.triage import (
+    TriageExecutionError,
+    TriagePolicy,
+    run_dynamic_triage,
+    run_triage_tool,
+)
 from reporting.markdown import (
     build_editor_inputs,
     publish_report,
@@ -63,6 +69,17 @@ def _load_sources() -> list[SourceConfig]:
     return [SourceConfig.model_validate(entry) for entry in raw]
 
 
+def _default_triage_policy() -> TriagePolicy:
+    return TriagePolicy(
+        allowed_tools=set(TriageTool),
+        max_steps=4,
+        timeout_seconds=10,
+        max_tokens=800,
+        max_cost=0.05,
+        allowed_network_scopes={"none", "official_sources"},
+    )
+
+
 def _bucket_candidate(
     run: RunRecord, candidate_id: str, candidate: CandidateRecord
 ) -> None:
@@ -78,6 +95,14 @@ def _bucket_candidate(
     if candidate.terminal_status is None:
         raise ValueError(f"candidate {candidate_id} has no terminal status")
     buckets[candidate.terminal_status].append(candidate_id)
+
+
+def _markable_seen_statuses() -> set[CandidateTerminalStatus]:
+    return {
+        CandidateTerminalStatus.ACCEPT,
+        CandidateTerminalStatus.WATCHLIST,
+        CandidateTerminalStatus.REJECT,
+    }
 
 
 def _fail_run(
@@ -124,6 +149,8 @@ def run_radar(settings: Settings, now: datetime | None = None) -> RunRecord:
             settings.copilot_github_token,
             use_logged_in_user=settings.use_logged_in_copilot,
         )
+        triage_policy = _default_triage_policy()
+        triage_planner = partial(run_triage_planner, client, settings.triage_model)
         analyst = partial(run_analyst, client, settings.analyst_model)
         skeptic = partial(run_skeptic, client, settings.skeptic_model)
         judge = partial(run_judge, client, settings.judge_model)
@@ -137,13 +164,72 @@ def run_radar(settings: Settings, now: datetime | None = None) -> RunRecord:
             if candidate is not None:
                 logger.info("terminal candidate reused: %s", item.id)
             else:
-                candidate = process_candidate(
-                    item,
-                    analyst,
-                    skeptic,
-                    judge,
-                    max_revisions=settings.max_revisions,
-                )
+                try:
+                    triage_result = run_dynamic_triage(
+                        item,
+                        triage_policy,
+                        triage_planner,
+                        run_triage_tool,
+                    )
+                except TriageExecutionError as exc:
+                    candidate = CandidateRecord(
+                        source=item,
+                        terminal_status=CandidateTerminalStatus.ERROR,
+                        error=f"{type(exc).__name__}: {exc}",
+                        triage_trace=list(exc.trace),
+                    )
+                    logger.warning("candidate triage failure: %s (%s)", item.id, exc)
+                else:
+                    triage_summary = triage_result.summary
+                    triage_trace = triage_result.trace
+
+                    def triage_aware_analyst(current_item, previous_analysis, judge_feedback):
+                        return analyst(
+                            current_item,
+                            previous_analysis,
+                            judge_feedback,
+                            triage_summary=triage_summary,
+                            triage_trace=triage_trace,
+                        )
+
+                    def triage_aware_skeptic(current_item, current_analysis):
+                        return skeptic(
+                            current_item,
+                            current_analysis,
+                            triage_summary=triage_summary,
+                            triage_trace=triage_trace,
+                        )
+
+                    def triage_aware_judge(
+                        current_item,
+                        current_analysis,
+                        current_critique,
+                        allow_revision,
+                    ):
+                        return judge(
+                            current_item,
+                            current_analysis,
+                            current_critique,
+                            allow_revision,
+                            triage_summary=triage_summary,
+                            triage_trace=triage_trace,
+                        )
+
+                    candidate = process_candidate(
+                        item,
+                        triage_aware_analyst,
+                        triage_aware_skeptic,
+                        triage_aware_judge,
+                        max_revisions=settings.max_revisions,
+                    )
+                    candidate.triage_summary = triage_summary
+                    candidate.triage_trace = triage_trace
+                    logger.info(
+                        "candidate triage end: %s tools=%s",
+                        item.id,
+                        [step.tool.value for step in triage_result.trace],
+                    )
+
             run.candidates[item.id] = candidate
             _bucket_candidate(run, item.id, candidate)
             store.save_run(run)
@@ -167,7 +253,7 @@ def run_radar(settings: Settings, now: datetime | None = None) -> RunRecord:
 
         seen_updates = {}
         for candidate_id, candidate in run.candidates.items():
-            if candidate.terminal_status is not None:
+            if candidate.terminal_status in _markable_seen_statuses():
                 seen_updates[candidate_id] = {
                     "url": str(candidate.source.url),
                     "terminal_status": candidate.terminal_status.value,

@@ -124,3 +124,17 @@ def test_editor_finding_rejects_confidence_outside_unit_interval(
             confidence=confidence,
             skeptic_objection="Evidence is preliminary",
         )
+
+
+def test_triage_decision_requires_action_when_not_done() -> None:
+    from models.schemas import TriageDecision
+
+    with pytest.raises(ValidationError):
+        TriageDecision(done=False)
+
+
+def test_triage_decision_requires_summary_when_done() -> None:
+    from models.schemas import TriageDecision
+
+    with pytest.raises(ValidationError):
+        TriageDecision(done=True)
