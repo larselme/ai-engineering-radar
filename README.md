@@ -16,9 +16,19 @@ Each successful run produces:
 ## Architecture
 
 ```text
-Collector
-   |
-   v
+deterministic collection
+          |
+          v
+   Dynamic Triage Planner
+ (chooses next bounded tool)
+          |
+ deterministic triage policy
+(tool/scope/steps/time/tokens/cost)
+          |
+          v
+   triage evidence package
+          |
+          v
 Analyst -> Skeptic -> Judge
   ^                  |
   |------ REVISE ----|
@@ -30,12 +40,16 @@ Analyst -> Skeptic -> Judge
              deterministic Markdown
 ```
 
+Triage output is not a sidecar: the triage summary and trace are injected into
+Analyst, Skeptic, and Judge prompts for that candidate, and are persisted on the
+candidate record in the run file.
+
 ## Repository Structure
 
 - `main.py`: run lifecycle and orchestration wiring
 - `collector/`: deterministic RSS/webpage collection
 - `agents/`: bounded LLM role contracts and provider client
-- `orchestration/`: explicit revision-bounded routing graph
+- `orchestration/`: dynamic bounded triage loop + revision-bounded reasoning graph
 - `reporting/`: report validation and deterministic Markdown rendering
 - `storage/`: atomic JSON persistence and recovery
 - `models/`: domain schemas and validation
@@ -111,3 +125,5 @@ py -3.13 -m pytest tests/test_integration_copilot.py -v -m integration
 - Source collection uses the system trust store (via `truststore`) when available.
 - Collector source failures are non-fatal; the run can still succeed.
 - Every run scans the previous 7 days; seen-state dedupe prevents repeat processing.
+- Seen-state is only updated for `accept`, `watchlist`, and `reject`; `error`
+  candidates are retried on later runs.
